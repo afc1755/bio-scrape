@@ -17,15 +17,22 @@ def handleURL(geneURL):
     soup = BeautifulSoup(htmlPart.data, "html.parser")
     potNames = getPotNames(preArray, 0, soup)
     potNames.extend(getPotNames(postArray, 1, soup))
-    potNames = elimNonNames(potNames)
-    geneName = getMostFreq(potNames)
-    print("Best Guess for Gene: " + geneName)
+    reducedNames = elimNonNames(potNames)
+    if len(reducedNames) > 0:
+        geneName = getMostFreq(reducedNames)
+        print("Best Guess for Gene: " + geneName)
+    else:
+        if len(potNames) > 0:
+            print("Article does not appear to have gene name in text. Might be a video or a general article")
+        else:
+            print("Does not appear to be an article on genetics")
 
 def createKeyWordPreArr():
     kwArr = []
     kwArr.append(" gene ")
     kwArr.append(" mutations ")
     kwArr.append(" mutation ")
+    kwArr.append(" expression ")
     return kwArr
 
 def createKeyWordPostArr():
@@ -35,6 +42,10 @@ def createKeyWordPostArr():
     kwArr.append(" mutation in the ")
     kwArr.append(" variants of ")
     kwArr.append(" variance in ")
+    kwArr.append(" named ")
+    kwArr.append(" expression of ")
+    kwArr.append(" overexpression of ")
+    kwArr.append(" underexpression of ")
     return kwArr
 
 def elimNonNames(arr):
