@@ -1,6 +1,7 @@
 import Bio
 from Bio import Entrez
 from Bio import SeqIO
+import re
 import certifi
 import urllib3
 from bs4 import BeautifulSoup
@@ -29,23 +30,27 @@ def handleURL(geneURL):
 
 def createKeyWordPreArr():
     kwArr = []
-    kwArr.append(" gene ")
-    kwArr.append(" mutations ")
-    kwArr.append(" mutation ")
-    kwArr.append(" expression ")
+    kwArr.append(" gene")
+    kwArr.append(" mutations")
+    kwArr.append(" mutation")
+    kwArr.append(" expression")
+    kwArr.append(" splicing")
     return kwArr
 
 def createKeyWordPostArr():
     kwArr = []
-    kwArr.append(" gene called ")
-    kwArr.append(" mutation in ")
-    kwArr.append(" mutation in the ")
-    kwArr.append(" variants of ")
-    kwArr.append(" variance in ")
-    kwArr.append(" named ")
-    kwArr.append(" expression of ")
-    kwArr.append(" overexpression of ")
-    kwArr.append(" underexpression of ")
+    kwArr.append("gene called ")
+    kwArr.append("mutation in ")
+    kwArr.append("mutations in ")
+    kwArr.append("mutation in the ")
+    kwArr.append("variants of ")
+    kwArr.append("variance in ")
+    kwArr.append("known as ")
+    kwArr.append("named ")
+    kwArr.append("expression of ")
+    kwArr.append("overexpression of ")
+    kwArr.append("underexpression of ")
+    kwArr.append("gene ")
     return kwArr
 
 def elimNonNames(arr):
@@ -54,15 +59,16 @@ def elimNonNames(arr):
     textWall = dictFile.read()
     dictFile.close();
     for ele in arr:
-        if not ele in textWall:
+        if not ele.lower() in textWall and re.match("^[a-zA-Z0-9]*$", ele) and not ele.isdigit():
             newArr.append(ele)
     return newArr
 
 def getPotNames(arr, modEq, soup):
     retArr = []
+    soupStr = str(soup)
     for term in arr:
-        if term in str(soup):
-            splitHTML = str(soup).split(term)
+        if term.upper() in soupStr.upper():
+            splitHTML = re.split(term, soupStr, flags=re.IGNORECASE)
             for i in range(0, len(splitHTML)):
                 if modEq == 1:
                     if i % 2 == modEq:
@@ -77,10 +83,14 @@ def getMostFreq(arr):
     freqDict = {}
     for term in arr:
         if term in freqDict:
-            freqDict[term] = freqDict[term] + 1
+            freqDict[term] += 1
         else:
             freqDict[term] = 1
-    return max(freqDict)
+        if len(term) == 5:
+            freqDict[term] += 3
+        if term.upper() == term:
+            freqDict[term] += 3
+    return max(freqDict, key=lambda key: freqDict[key])
 
 def main():
     geneURL = input("Please enter a url: ")
