@@ -22,11 +22,13 @@ def handleURL(geneURL):
     if len(reducedNames) > 0:
         geneName = getMostFreq(reducedNames)
         print("Best Guess for Gene: " + geneName)
+        return geneName
     else:
         if len(potNames) > 0:
             print("Article does not appear to have gene name in text. Might be a video or a general article")
         else:
             print("Does not appear to be an article on genetics")
+    return ""
 
 def createKeyWordPreArr():
     kwArr = []
@@ -92,8 +94,12 @@ def getMostFreq(arr):
             freqDict[term] += 3
     return max(freqDict, key=lambda key: freqDict[key])
 
+def analyzeGene(gene):
+    print("Analyzing gene: " + gene)
+
 def main():
     geneURL = input("Please enter a url: ")
-    handleURL(geneURL)
+    geneName = handleURL(geneURL)
+    analyzeGene(geneName)
 
 main()
