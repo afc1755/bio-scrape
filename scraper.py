@@ -95,7 +95,15 @@ def getMostFreq(arr):
     return max(freqDict, key=lambda key: freqDict[key])
 
 def analyzeGene(gene):
+    email = "afc1755@rit.edu"
     print("Analyzing gene: " + gene)
+    Entrez.email = email
+    handle = Entrez.efetch(db="gene", id=gene, rettype= "gene_table", retmode="text")
+    printMe = "Start"
+    while printMe != "":
+        printMe = handle.readline().strip()
+        print(printMe)
+    print("Analysis complete!")
 
 def main():
     geneURL = input("Please enter a url: ")
