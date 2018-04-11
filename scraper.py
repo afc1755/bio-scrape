@@ -1,6 +1,5 @@
-import Bio
 from Bio import Entrez
-from Bio import SeqIO
+import tkinter as tk
 import re
 import certifi
 import urllib3
@@ -10,18 +9,23 @@ from bs4 import BeautifulSoup
 command line webscraping, main center for project code
 """
 
-def handleURL(geneURL):
+def handleURL(geneURL, geneNum):
     http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
     htmlPart = http.request('GET', geneURL)
     preArray = createKeyWordPreArr()
     postArray = createKeyWordPostArr()
     soup = BeautifulSoup(htmlPart.data, "html.parser")
-    potNames = getPotNames(preArray, 0, soup)
-    potNames.extend(getPotNames(postArray, 1, soup))
+    potNames = getPotNames(preArray, 0, soup,geneNum)
+    potNames.extend(getPotNames(postArray, 1, soup,geneNum))
     reducedNames = elimNonNames(potNames)
     if len(reducedNames) > 0:
-        geneName = getMostFreq(reducedNames)
-        print("Best Guess for Gene: " + geneName)
+        geneNameList = getMostFreqList(reducedNames,geneNum)
+        print("Best Guess for Gene: " + geneNameList[0])
+        if(len(geneNameList) > 1):
+            print("Other Top Guesses for Gene: ")
+        for i in range(len(geneNameList) - 1):
+            print(geneNameList[i + 1])
+
         return geneName
     else:
         if len(potNames) > 0:
@@ -33,14 +37,17 @@ def handleURL(geneURL):
 def createKeyWordPreArr():
     kwArr = []
     kwArr.append(" gene")
+    kwArr.append(" is a gene")
     kwArr.append(" mutations")
     kwArr.append(" mutation")
     kwArr.append(" expression")
     kwArr.append(" splicing")
+    kwArr.append(", a gene")
     return kwArr
 
 def createKeyWordPostArr():
     kwArr = []
+    kwArr.append("genes called ")
     kwArr.append("gene called ")
     kwArr.append("mutation in ")
     kwArr.append("mutations in ")
@@ -53,19 +60,23 @@ def createKeyWordPostArr():
     kwArr.append("overexpression of ")
     kwArr.append("underexpression of ")
     kwArr.append("gene ")
+    kwArr.append("genes ")
+    kwArr.append("genes like ")
+    kwArr.append(", or ")
+
     return kwArr
 
 def elimNonNames(arr):
     newArr = []
     dictFile = open('dict.txt', 'r')
     textWall = dictFile.read()
-    dictFile.close();
+    dictFile.close()
     for ele in arr:
-        if not ele.lower() in textWall and re.match("^[a-zA-Z0-9]*$", ele) and not ele.isdigit():
-            newArr.append(ele)
+        if not ele.lower().strip(',') in textWall and re.match("^[a-zA-Z0-9,]*$", ele) and not ele.isdigit():
+            newArr.append(ele.strip(','))
     return newArr
 
-def getPotNames(arr, modEq, soup):
+def getPotNames(arr, modEq, soup, geneNum):
     retArr = []
     soupStr = str(soup)
     for term in arr:
@@ -74,14 +85,19 @@ def getPotNames(arr, modEq, soup):
             for i in range(0, len(splitHTML)):
                 if modEq == 1:
                     if i % 2 == modEq:
-                        retArr.append(splitHTML[i].split()[0])
+                        splat = splitHTML[i].split()
+                        for i in range(geneNum):
+                            if(len(splat) >= i):
+                                retArr.append(splat[i])
                 else:
                     if i % 2 == modEq:
-                        splitAgain = splitHTML[i].split()
-                        retArr.append(splitAgain[len(splitAgain) - 1])
+                        splat = splitHTML[i].split()
+                        for i in range(geneNum):
+                            if(len(splat) >= i):
+                                retArr.append(splat[len(splat) - (i + 1)])
     return retArr
 
-def getMostFreq(arr):
+def getMostFreqList(arr, geneNum):
     freqDict = {}
     for term in arr:
         if term in freqDict:
@@ -92,22 +108,42 @@ def getMostFreq(arr):
             freqDict[term] += 3
         if term.upper() == term:
             freqDict[term] += 3
-    return max(freqDict, key=lambda key: freqDict[key])
+    lst = []
+    for i in range(geneNum):
+        if(len(freqDict) >= i):
+            lst.append(freqDict.pop(max(freqDict, key=lambda key: freqDict[key])))
+    return lst
 
-def analyzeGene(gene):
+def analyze():
+    geneNameList = handleURL(e1.get(), e2.get())
+    analyzeGene(geneNameList)
+
+def analyzeGene(geneList):
     email = "afc1755@rit.edu"
-    print("Analyzing gene: " + gene)
-    Entrez.email = email
-    handle = Entrez.efetch(db="gene", id=gene, rettype= "gene_table", retmode="text")
-    printMe = "Start"
-    while printMe != "":
-        printMe = handle.readline().strip()
-        print(printMe)
-    print("Analysis complete!")
+    for i in range(len(geneList)):
+        print("Analyzing gene: " + geneList[i])
+        Entrez.email = email
+        handle = Entrez.efetch(db="gene", id=geneList[i], rettype= "gene_table", retmode="text")
+        printMe = "Start"
+        while printMe != "":
+            printMe = handle.readline().strip()
+            print(printMe)
+        print("Analysis complete!")
 
-def main():
-    geneURL = input("Please enter a url: ")
+    """geneURL = input("Please enter a url: ")
     geneName = handleURL(geneURL)
-    analyzeGene(geneName)
+    analyzeGene(geneName)"""
 
-main()
+root = tk.Tk()
+root.title("Genetic Article Analysis")
+label1 = tk.Label(root, fg="dark green", text='Enter URL:')
+e1 = tk.Entry(root, width=80)
+label2 = tk.Label(root, fg="dark green", text='Enter Number of Genes to Search For:')
+e2 = tk.Entry(root, width=80)
+label1.pack()
+e1.pack()
+label2.pack()
+e2.pack()
+search = tk.Button(root, text='Analyze Article Gene', width=25, command=analyze)
+search.pack(side=tk.BOTTOM)
+root.mainloop()
