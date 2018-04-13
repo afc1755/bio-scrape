@@ -140,10 +140,6 @@ def analyzeGene(geneList):
             print(printMe)
         print("Analysis complete!")
 
-    """geneURL = input("Please enter a url: ")
-    geneName = handleURL(geneURL)
-    analyzeGene(geneName)"""
-
 root = tk.Tk()
 root.title("Genetic Article Analysis")
 label1 = tk.Label(root, fg="dark green", text='Enter URL:')
