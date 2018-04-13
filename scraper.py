@@ -30,6 +30,7 @@ def handleURL(geneURL, geneNum):
             print(geneNameList[i + 1])
             if i < len(geneNameList) - 2:
                 print(", ", end = "")
+        print("")
         return geneNameList
     else:
         if len(potNames) > 0:
@@ -137,28 +138,33 @@ def analyzeGene(geneList):
     Entrez.email = email
     for i in range(len(geneList)):
         print("Analyzing gene: " + geneList[i])
-        handle = Entrez.esearch(db="gene", term=geneList[i])
+        handle = Entrez.esearch(db="gene", retmax=5, term=geneList[i])
         dicEle = Entrez.read(handle)
         ids = dicEle.get('IdList')
-        ids = ids[:5]
         printMe = "Top 5 Gene IDs: "
         for ele in ids:
             printMe += str(ele) + ", "
         print(printMe[:len(printMe) - 2])
         print("")
+        for ele in ids:
+            efetchRes = Entrez.efetch(db='gene', id=str(ele))
         handle.close()
     print("Analysis complete!")
 
 root = tk.Tk()
-root.title("Genetic Article Analysis")
-label1 = tk.Label(root, fg="dark green", text='Enter URL:')
+root.title("Webpage Gene Finder")
+label1 = tk.Label(root, fg="maroon", text='URL:')
 e1 = tk.Entry(root, width=80)
-label2 = tk.Label(root, fg="dark green", text='Enter Number of Genes to Search For:')
-e2 = tk.Entry(root, width=80)
+label2 = tk.Label(root, fg="maroon", text='Number of Genes to Search For:')
+e2 = tk.Entry(root, width=60)
+label3 = tk.Label(root, fg="maroon", text='File To Save to(Default: here):')
+e3 = tk.Entry(root, width=60)
 label1.pack()
 e1.pack()
 label2.pack()
 e2.pack()
+label3.pack()
+e3.pack()
 search = tk.Button(root, text='Analyze Article Gene', width=25, command=analyze)
 search.pack(side=tk.BOTTOM)
 root.mainloop()
