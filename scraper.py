@@ -12,6 +12,7 @@ command line webscraping, main center for project code
 def handleURL(geneURL, geneNum):
     http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
     htmlPart = http.request('GET', geneURL)
+    print("Finding gene in webpage...")
     preArray = createKeyWordPreArr()
     postArray = createKeyWordPostArr()
     soup = BeautifulSoup(htmlPart.data, "html.parser")
@@ -32,9 +33,9 @@ def handleURL(geneURL, geneNum):
         return geneNameList
     else:
         if len(potNames) > 0:
-            print("Article does not appear to have gene name in text. Might be a video or a general article")
+            print("Error: Article does not appear to have gene name in text. Might be a video or a general article")
         else:
-            print("Does not appear to be an article on genetics")
+            print("Error: Does not appear to be an article on genetics")
     return ""
 
 def createKeyWordPreArr():
@@ -96,13 +97,13 @@ def getPotNames(arr, modEq, soup, geneNum):
                     if i % 2 == modEq:
                         splat = splitHTML[i].split()
                         for i in range(geneNum):
-                            if(len(splat) >= i):
+                            if(len(splat) > i):
                                 retArr.append(splat[i])
                 else:
                     if i % 2 == modEq:
                         splat = splitHTML[i - 1].split()
                         for i in range(geneNum):
-                            if(len(splat) >= i):
+                            if(len(splat) > i):
                                 retArr.append(splat[len(splat) - (i + 1)])
     return retArr
 
@@ -126,7 +127,10 @@ def getMostFreqList(arr, geneNum):
 
 def analyze():
     geneNameList = handleURL(e1.get(), int(e2.get()))
-    analyzeGene(geneNameList)
+    if(len(geneNameList) > 0):
+        analyzeGene(geneNameList)
+    else:
+        print("No analysis done, no genes found!")
 
 def analyzeGene(geneList):
     email = "afc1755@rit.edu"
@@ -134,11 +138,16 @@ def analyzeGene(geneList):
     for i in range(len(geneList)):
         print("Analyzing gene: " + geneList[i])
         handle = Entrez.esearch(db="gene", term=geneList[i])
-        printMe = "Start"
-        while printMe != "":
-            printMe = handle.readline().strip()
-            print(printMe)
-        print("Analysis complete!")
+        dicEle = Entrez.read(handle)
+        ids = dicEle.get('IdList')
+        ids = ids[:5]
+        printMe = "Top 5 Gene IDs: "
+        for ele in ids:
+            printMe += str(ele) + ", "
+        print(printMe[:len(printMe) - 2])
+        print("")
+        handle.close()
+    print("Analysis complete!")
 
 root = tk.Tk()
 root.title("Genetic Article Analysis")
