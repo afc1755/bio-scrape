@@ -146,8 +146,8 @@ def analyzeGene(geneList):
             printMe += str(ele) + ", "
         print(printMe[:len(printMe) - 2])
         print("")
-        for ele in ids:
-            efetchRes = Entrez.efetch(db='gene', id=str(ele))
+        #for ele in ids:
+            #efetchRes = Entrez.efetch(db='gene', id=str(ele))
         handle.close()
     print("Analysis complete!")
 
