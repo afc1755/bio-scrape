@@ -15,18 +15,21 @@ def handleURL(geneURL, geneNum):
     preArray = createKeyWordPreArr()
     postArray = createKeyWordPostArr()
     soup = BeautifulSoup(htmlPart.data, "html.parser")
-    potNames = getPotNames(preArray, 0, soup,geneNum)
-    potNames.extend(getPotNames(postArray, 1, soup,geneNum))
+    potNames = getPotNames(preArray, 0, soup, geneNum)
+    potNames.extend(getPotNames(postArray, 1, soup, geneNum))
     reducedNames = elimNonNames(potNames)
     if len(reducedNames) > 0:
-        geneNameList = getMostFreqList(reducedNames,geneNum)
-        print("Best Guess for Gene: " + geneNameList[0])
+        geneNameList = getMostFreqList(reducedNames, geneNum)
+        print("Top Gene: " + geneNameList[0])
+        if(len(geneNameList) < geneNum):
+            print("You wanted to find " + geneNum + " genes in this article and I only found " + len(geneNameList))
         if(len(geneNameList) > 1):
-            print("Other Top Guesses for Gene: ")
+            print("Other Genes: ", end = "")
         for i in range(len(geneNameList) - 1):
             print(geneNameList[i + 1])
-
-        return geneName
+            if i < len(geneNameList) - 2:
+                print(", ", end = "")
+        return geneNameList
     else:
         if len(potNames) > 0:
             print("Article does not appear to have gene name in text. Might be a video or a general article")
@@ -43,17 +46,23 @@ def createKeyWordPreArr():
     kwArr.append(" expression")
     kwArr.append(" splicing")
     kwArr.append(", a gene")
+    kwArr.append(" effects")
     return kwArr
 
 def createKeyWordPostArr():
     kwArr = []
     kwArr.append("genes called ")
     kwArr.append("gene called ")
+    kwArr.append("gene, ")
+    kwArr.append("alleles for ")
+    kwArr.append("attributed to ")
     kwArr.append("mutation in ")
     kwArr.append("mutations in ")
     kwArr.append("mutation in the ")
     kwArr.append("variants of ")
+    kwArr.append("variation of ")
     kwArr.append("variance in ")
+    kwArr.append("allele in ")
     kwArr.append("known as ")
     kwArr.append("named ")
     kwArr.append("expression of ")
@@ -72,7 +81,7 @@ def elimNonNames(arr):
     textWall = dictFile.read()
     dictFile.close()
     for ele in arr:
-        if not ele.lower().strip(',') in textWall and re.match("^[a-zA-Z0-9,]*$", ele) and not ele.isdigit():
+        if not ele.lower().strip(',') in textWall and re.match("^[a-zA-Z0-9,-]*$", ele) and not ele.isdigit():
             newArr.append(ele.strip(','))
     return newArr
 
@@ -91,7 +100,7 @@ def getPotNames(arr, modEq, soup, geneNum):
                                 retArr.append(splat[i])
                 else:
                     if i % 2 == modEq:
-                        splat = splitHTML[i].split()
+                        splat = splitHTML[i - 1].split()
                         for i in range(geneNum):
                             if(len(splat) >= i):
                                 retArr.append(splat[len(splat) - (i + 1)])
@@ -110,20 +119,21 @@ def getMostFreqList(arr, geneNum):
             freqDict[term] += 3
     lst = []
     for i in range(geneNum):
-        if(len(freqDict) >= i):
-            lst.append(freqDict.pop(max(freqDict, key=lambda key: freqDict[key])))
+        if(len(freqDict) > 0):
+            lst.append(max(freqDict, key=lambda key: freqDict[key]))
+            freqDict.pop(max(freqDict, key=lambda key: freqDict[key]))
     return lst
 
 def analyze():
-    geneNameList = handleURL(e1.get(), e2.get())
+    geneNameList = handleURL(e1.get(), int(e2.get()))
     analyzeGene(geneNameList)
 
 def analyzeGene(geneList):
     email = "afc1755@rit.edu"
+    Entrez.email = email
     for i in range(len(geneList)):
         print("Analyzing gene: " + geneList[i])
-        Entrez.email = email
-        handle = Entrez.efetch(db="gene", id=geneList[i], rettype= "gene_table", retmode="text")
+        handle = Entrez.esearch(db="gene", term=geneList[i])
         printMe = "Start"
         while printMe != "":
             printMe = handle.readline().strip()
