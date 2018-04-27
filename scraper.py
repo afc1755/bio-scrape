@@ -5,14 +5,17 @@ import certifi
 import urllib3
 from bs4 import BeautifulSoup
 
-"""Created by Andrew Chabot
-command line webscraping, main center for project code
+"""
+Created by Andrew Chabot
+GUI based webscraping for gene name and minor gene ID analysis built in  
 """
 
-def handleURL(geneURL, geneNum):
+def handleURL(geneURL, geneNum, fileName):
+    fle = open(fileName, 'w')
     http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
     htmlPart = http.request('GET', geneURL)
     print("Finding gene in webpage...")
+    fle.write("Finding gene in webpage...\n")
     preArray = createKeyWordPreArr()
     postArray = createKeyWordPostArr()
     soup = BeautifulSoup(htmlPart.data, "html.parser")
@@ -22,21 +25,28 @@ def handleURL(geneURL, geneNum):
     if len(reducedNames) > 0:
         geneNameList = getMostFreqList(reducedNames, geneNum)
         print("Top Gene: " + geneNameList[0])
+        fle.write("Top Gene: " + geneNameList[0] + "\n")
         if(len(geneNameList) < geneNum):
-            print("You wanted to find " + geneNum + " genes in this article and I only found " + len(geneNameList))
+            print("You wanted to find " + geneNum + " genes in this article and I only found " + str(len(geneNameList)))
+            fle.write("You wanted to find " + geneNum + " genes in this article and I only found " + str(len(geneNameList)) + "\n")
         if(len(geneNameList) > 1):
-            print("Other Genes: ", end = "")
+            print("Other Genes: ", end="")
+            fle.write("Other Genes: ")
         for i in range(len(geneNameList) - 1):
             print(geneNameList[i + 1])
             if i < len(geneNameList) - 2:
-                print(", ", end = "")
+                fle.write(", ")
+                print(", ", end="")
         print("")
         return geneNameList
     else:
         if len(potNames) > 0:
             print("Error: Article does not appear to have gene name in text. Might be a video or a general article")
+            fle.write("Error: Article does not appear to have gene name in text. Might be a video or a general article\n")
         else:
             print("Error: Does not appear to be an article on genetics")
+            print("Error: Does not appear to be an article on genetics\n")
+    fle.close()
     return ""
 
 def createKeyWordPreArr():
@@ -127,27 +137,56 @@ def getMostFreqList(arr, geneNum):
     return lst
 
 def analyze():
-    geneNameList = handleURL(e1.get(), int(e2.get()))
+    if(e3.get() == ""):
+        fileName = "output.txt"
+    else:
+        fileName = e3.get()
+        if fileName[len(fileName) - 4:] != ".txt":
+            fileName += ".txt"
+    geneNameList = handleURL(e1.get(), int(e2.get()), fileName)
     if(len(geneNameList) > 0):
-        analyzeGene(geneNameList)
+        analyzeGene(geneNameList, fileName)
     else:
         print("No analysis done, no genes found!")
 
-def analyzeGene(geneList):
+def analyzeGene(geneList, fileName):
+    fle = open(fileName, "w+")
     email = "afc1755@rit.edu"
     Entrez.email = email
     for i in range(len(geneList)):
-        print("Analyzing gene: " + geneList[i])
+        fle.write("Searching for gene: " + geneList[i] + " in NCBI gene database\n")
+        print("Searching for gene: " + geneList[i] + " in NCBI gene database")
         handle = Entrez.esearch(db="gene", retmax=5, term=geneList[i])
         dicEle = Entrez.read(handle)
         ids = dicEle.get('IdList')
-        printMe = "Top 5 Gene IDs: "
+        printMe = "Top 5 Matching Gene IDs: "
+        printMe += str(ids)
+        fle.write(printMe + "\n")
+        print(printMe)
         for ele in ids:
-            printMe += str(ele) + ", "
-        print(printMe[:len(printMe) - 2])
+            fle.write("Info for Gene ID: " + ele + "\n")
+            print("Info for Gene ID: " + ele)
+            summary = Entrez.esummary(db="gene",id=ele)
+            sumRead = Entrez.read(summary)
+            handle.close()
+            fle.write("Organism: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['Organism']['ScientificName'] + ", " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['Organism']['CommonName'] + "\n")
+            fle.write("Name: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['Name'] + "\n")
+            print("Organism: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['Organism']['ScientificName'] + ", " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['Organism']['CommonName'])
+            print("Name: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['Name'])
+            print("Desription: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['Description'])
+            if(len(sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo']) > 0):
+                fle.write("Chromosome Location: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo'][0]['ChrLoc'] + "\n")
+                fle.write("Chromosome Start and Stop: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo'][0]['ChrStart'] + ", " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo'][0]['ChrStop'] + "\n")
+                fle.write("Exon Count: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo'][0]['ExonCount'] + "\n")
+                print("Chromosome Location: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo'][0]['ChrLoc'])
+                print("Chromosome Start and Stop: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo'][0]['ChrStart'] + ", " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo'][0]['ChrStop'])
+                print("Exon Count: " + sumRead['DocumentSummarySet']['DocumentSummary'][0]['GenomicInfo'][0]['ExonCount'])
+            else:
+                print("Most genetic info unknown about this gene")
+                fle.write("Most genetic info unknown about this gene\n")
+            fle.write("\n")
+            print("\n")
         print("")
-        for ele in ids:
-            efetchRes = Entrez.efetch(db='gene', id=str(ele))
         handle.close()
     print("Analysis complete!")
 
@@ -156,9 +195,9 @@ root.title("Webpage Gene Finder")
 label1 = tk.Label(root, fg="maroon", text='URL:')
 e1 = tk.Entry(root, width=80)
 label2 = tk.Label(root, fg="maroon", text='Number of Genes to Search For:')
-e2 = tk.Entry(root, width=60)
+e2 = tk.Entry(root, width=20)
 label3 = tk.Label(root, fg="maroon", text='File To Save to(Default: here):')
-e3 = tk.Entry(root, width=60)
+e3 = tk.Entry(root, width=40)
 label1.pack()
 e1.pack()
 label2.pack()
