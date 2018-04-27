@@ -159,7 +159,7 @@ def getMostFreqList(arr, geneNum):
     :param arr: reduced array of potential gene names
     :param geneNum: number of gene names being returned
     :return: list of geneNum size that is the most frequent names in the given
-    array
+    arr
     """
     freqDict = {}
     for term in arr:
